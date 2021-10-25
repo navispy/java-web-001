@@ -12,8 +12,12 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.glassfish.json.*;
-import jakarta.json.*;
+//import org.glassfish.json.*;
+
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.Json;
+import javax.json.JsonException;
 //import com.google.code.gson;
 
 /**
@@ -96,6 +100,7 @@ public class GetFlightInfo extends HttpServlet {
         }
         
         jsonBuilder.add("flightID", flightID);
+        jsonBuilder.add("totalWeight", 0);
         JsonObject json = jsonBuilder.build(); 
         
         //request.setAttribute("ArraySize", id);
