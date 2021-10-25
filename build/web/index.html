@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<!--
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit this template
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <style>
+            body {
+                display: flex;
+                justify-content: center;
+            }
+            .flight-wrapper {
+                display:flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 20px;
+            }
+            
+            .cb-flight {
+                width: 400px;
+            }
+            
+            .btn {
+                width: 400px;
+                border: 1px solid red;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+            
+            .btn:hover {
+                border: 2px solid red;
+            }
+        </style>
+    </head>
+    <body>
+        
+        
+        <script>
+            
+            var flights = [];
+            
+            async function getInfo() {
+
+                let flightID = document.querySelector(".cb-flight").value;
+
+                var params = {
+                    flightID: flightID
+                }
+
+                let response = await fetch(`GetFlightInfo`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: Object.entries(params).map(([k,v])=>{return k+'='+v}).join('&')
+                });
+
+                let info = await response.json();
+                console.log(info);
+
+                if (!response.ok) {
+                    throw new Error(data.message);
+                }
+                
+                
+            }
+            
+            async function getFlights() {
+    
+                let response = await fetch(`flights.json`)
+                .catch(e => {
+                    console.log('Error: ' + e.message);
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                let flights = await response.json();
+                return flights; 
+            }
+
+            async function showFlights(userID) {
+                flights = await getFlights()
+                .catch(e => {
+                    console.log('There has been a problem with your fetch operation: ' + e.message);
+                });
+            
+                //console.log(flights);
+                let numFlights = flights.length;
+                
+                let html = "";
+
+                for(let i=0; i<numFlights; i++) {
+                    
+                    let flight = flights[i];
+                    let id = flight["flightId"];
+                    let num = flight["flightNumber"];
+                    let departure = flight["departureAirportIATACode"];
+                    let arrival = flight["arrivalAirportIATACode"];
+                    let date = flight["departureDate"];
+                    
+                    let strFlight = `${num}: ${departure} - ${arrival}, ${date}`;
+
+                    html += `<option value="${id}">${strFlight}</option>`;
+                }
+                
+                let cbFlight = document.querySelector('.cb-flight');
+                cbFlight.innerHTML = html;
+
+            }
+            
+            showFlights();
+       
+        </script>
+        
+        <div class="flight-wrapper">
+            <span>Flight</span>
+                    
+            <select class="cb-flight">
+            </select>
+           
+            <div class="btn" onclick="getInfo()">
+                <span>Get info</span>
+            </div>
+        </div>
+    </body>
+</html>

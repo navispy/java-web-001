@@ -1,0 +1,37 @@
+[
+  {
+    "flightId": 0,
+    "flightNumber": 5089,
+    "departureAirportIATACode": "YYT",
+    "arrivalAirportIATACode": "LEW",
+    "departureDate": "2018-06-24T10:19:55 -03:00"
+  },
+  {
+    "flightId": 1,
+    "flightNumber": 4558,
+    "departureAirportIATACode": "ANC",
+    "arrivalAirportIATACode": "PPX",
+    "departureDate": "2021-08-24T09:00:30 -03:00"
+  },
+  {
+    "flightId": 2,
+    "flightNumber": 6182,
+    "departureAirportIATACode": "SEA",
+    "arrivalAirportIATACode": "PPX",
+    "departureDate": "2021-08-18T07:26:00 -03:00"
+  },
+  {
+    "flightId": 3,
+    "flightNumber": 1200,
+    "departureAirportIATACode": "LAX",
+    "arrivalAirportIATACode": "KRK",
+    "departureDate": "2017-06-21T03:56:43 -03:00"
+  },
+  {
+    "flightId": 4,
+    "flightNumber": 9526,
+    "departureAirportIATACode": "LAX",
+    "arrivalAirportIATACode": "KRK",
+    "departureDate": "2014-08-07T07:16:34 -03:00"
+  }
+]
