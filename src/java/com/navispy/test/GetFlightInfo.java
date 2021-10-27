@@ -8,36 +8,28 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-//import org.glassfish.json.*;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.Json;
 import javax.json.JsonException;
-import javax.json.JsonReader;
 import javax.json.JsonValue;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import jakarta.servlet.ServletContext;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Iterator;
-
-import java.lang.Object;
 /**
  *
  * @author knud
  */
-
+@WebServlet(name = "GetFlightInfo", urlPatterns = {"/GetFlightInfo"})
 public class GetFlightInfo extends HttpServlet {
+    
+    final static double LB2KG_ratio = 0.453592;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -49,26 +41,39 @@ public class GetFlightInfo extends HttpServlet {
      * @throws IOException if an I/O error occurs
      */
     
-    protected double getCargoWeightByFlight(String flightID, JsonArray allCargo) {
+    protected double getWeightByFlight(String flightID, JsonArray allRecs, String tag) {
         
-        HashMap<String, JsonArray> hm = new HashMap();
-
-        for (JsonValue cargo : allCargo) {
-            JsonObject obj = cargo.asJsonObject();            
-            JsonArray cargoRecs = obj.getJsonArray("cargo");
+        double totalWeight = 0;
+        
+        for (JsonValue rec : allRecs) {
+            JsonObject obj = rec.asJsonObject();            
             
-            for (JsonValue rec : cargoRecs) {
-                 JsonObject recObj = rec.asJsonObject();
-                 String strWeight = recObj.getString("weight");
-                 String strWeightUnit = recObj.getString("weightUnit");
-                 
-                 
+            JsonArray tagRecs = obj.getJsonArray(tag);
+            int jsonFlightID = obj.getInt("flightId");
+            
+            if(Integer.valueOf(flightID) != jsonFlightID) {
+                continue;
             }
             
-            System.out.println(cargo);
+            for (JsonValue tagRec : tagRecs) {
+                 JsonObject recObj = tagRec.asJsonObject();
+                 int weight = recObj.getInt("weight");
+                 String strWeightUnit = recObj.getString("weightUnit");
+                 int pieces = recObj.getInt("pieces");
+                 
+                 double subTotalWeightUnfixed = weight * pieces;
+                 double subTotalWeight = subTotalWeightUnfixed;
+                 
+                 if(strWeightUnit.equals("lb")) { // in this case we need to convert from lb to kg
+                    subTotalWeight = subTotalWeightUnfixed * LB2KG_ratio;
+                 }
+                 
+                 totalWeight += subTotalWeight;
+            }
+            
         }
         
-        return 0.00;
+        return totalWeight;
     }
     
     protected double getBaggageWeightByFlight(String flightID, JsonArray cargo) {
@@ -76,30 +81,7 @@ public class GetFlightInfo extends HttpServlet {
         return 0.00;
     }
     
-    protected JsonArray getJsonRecs(String path) {
-        
-        String realPath = this.getServletContext().getRealPath(path);
-        File jsonInputFile = new File(realPath);
-        InputStream is;
-        
-        JsonArray recs = null;
-        
-        try {
-            is = new FileInputStream(jsonInputFile);
-            // Create JsonReader from Json.
-            JsonReader reader = Json.createReader(is);
-            // Get the JsonObject structure from JsonReader.
-            recs = reader.readArray();
-            reader.close();
-     
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-                
-        return recs;
-    }
-    
+       
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
@@ -129,9 +111,6 @@ public class GetFlightInfo extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        
-        String flightId = request.getParameter("flightID");
         
     }
 
@@ -152,14 +131,24 @@ public class GetFlightInfo extends HttpServlet {
         // read json file
         
         JsonArray flights = null;
-        JsonArray cargo = null;
+        JsonArray recs = null;
         
-        try {
-            flights = getJsonRecs("flights.json");
-            cargo = getJsonRecs("cargo.json");
+        double cargoWeight = 0;
+        double baggageWeight = 0;
+        double totalWeight = 0;
             
-            double cargoWeight = getCargoWeightByFlight(flightID, cargo);
-            double baggageWeight = getBaggageWeightByFlight(flightID, cargo);
+        try {
+            
+  
+            ServletContext ctx = this.getServletContext();
+            
+            flights = Helper.getJsonRecs("flights.json", ctx);
+            recs = Helper.getJsonRecs("cargo.json", ctx);
+
+ 
+            cargoWeight = getWeightByFlight(flightID, recs, "cargo");
+            baggageWeight = getWeightByFlight(flightID, recs, "baggage");
+            totalWeight = cargoWeight + baggageWeight;
             
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -182,7 +171,10 @@ public class GetFlightInfo extends HttpServlet {
         }
         
         jsonBuilder.add("flightID", flightID);
-        jsonBuilder.add("totalWeight", 0);
+        jsonBuilder.add("cargoWeight", cargoWeight);
+        jsonBuilder.add("baggageWeight", baggageWeight);
+        jsonBuilder.add("totalWeight", totalWeight);
+        
         JsonObject json = jsonBuilder.build(); 
         
         //request.setAttribute("ArraySize", id);
