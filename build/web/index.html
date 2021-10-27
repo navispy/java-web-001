@@ -10,17 +10,20 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <style>
+            * {
+                box-sizing: border-box;
+            }
             body {
                 display: flex;
                 justify-content: center;
-                gap: 20px;
+                gap: 50px;
                 padding-top: 200px;
                 font-family: Arial;
             }
             .flight-wrapper,
             .flight-wrapper .results, 
             .airport-wrapper,
-            .airport-wrapper .results {
+            .airport-wrapper .airport-results {
                 display:flex;
                 flex-direction: column;
                 align-items: flex-end;
@@ -35,12 +38,12 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
             
             .cb-flight,
             .cb-airport {
-                width: 400px;
+                width: 200px;
             }
             
             .btn {
-                width: 400px;
-                border: 1px solid red;
+                width: 200px;
+                border: 1px solid lightgray;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -49,7 +52,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
             }
             
             .btn:hover {
-                border: 2px solid red;
+                border: 1px solid red;
             }
         </style>
     </head>
@@ -65,7 +68,6 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
 
                 let cbFlightSelector = document.querySelector(".cb-flight");
                 let flightID = cbFlightSelector.value;
-                let flightText = cbFlightSelector.options[cbFlightSelector.selectedIndex].text;
 
                 var params = {
                     flightID: flightID
@@ -101,7 +103,44 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
             }
             
             async function getAirportInfo() {
-                alert("getAirportInfo()");
+                
+                let cbAirportSelector = document.querySelector(".cb-airport");
+                let airportCode = cbAirportSelector.value;
+                let selectedAirport = cbAirportSelector.options[cbAirportSelector.selectedIndex];
+                let date = selectedAirport.getAttribute("data-date"); 
+
+                var params = {
+                    airportCode: airportCode,
+                    date: date
+                }
+
+                
+                let response = await fetch(`GetAirportInfo`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: Object.entries(params).map(([k,v])=>{return k+'='+v}).join('&')
+                });
+
+                let info = await response.json();
+                               
+                if (!response.ok) {
+                    throw new Error(data.message);
+                }
+                
+                let numFlightsIn = info["numFlightsIn"];
+                let numFlightsOut = info["numFlightsOut"];
+                let numPiecesIn = info["numPiecesIn"];
+                let numPiecesOut = info["numPiecesOut"];
+
+                let resultsHtml = `<span>Flights departing: <b>${numFlightsOut}</b></span>
+                                   <span>Flights arriving: <b>${numFlightsIn}</b></span>
+                                   <span>Pieces departing: <b>${numPiecesOut}</b></span>
+                                   <span>Pieces arriving: <b>${numPiecesIn}</b></span>`;
+        
+                let resultsDiv = document.querySelector('.airport-results');
+                resultsDiv.innerHTML = resultsHtml; 
             }
             
             async function getFlights() {
@@ -122,12 +161,10 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
             async function extractAirports(flights) {
 
                 let airports = {};
-                let numFlights = flights.length;
 
-                for(let i=0; i<numFlights; i++) {
-                    let flight = flights[i];
+                flights.forEach(flight => {
+                   
                     let id = flight["flightId"];
-                    
                     let departure = flight["departureAirportIATACode"];
                     let arrival = flight["arrivalAirportIATACode"];
                     
@@ -152,7 +189,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
                     
                     airports[departure][date].push(id);
                     airports[arrival][date].push(id);                    
-                }
+                });
                 
                 return airports;
             }
@@ -168,9 +205,8 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
                 
                 let html = "";
 
-                for(let i=0; i<numFlights; i++) {
+                flights.forEach(flight => {
                     
-                    let flight = flights[i];
                     let id = flight["flightId"];
                     let num = flight["flightNumber"];
                     let departure = flight["departureAirportIATACode"];
@@ -181,7 +217,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
                     let strFlight = `${num}: ${departure} - ${arrival}, ${date}`;
 
                     html += `<option value="${id}">${strFlight}</option>`;
-                }
+                });
                 
                 let cbFlight = document.querySelector('.cb-flight');
                 cbFlight.innerHTML = html;
@@ -192,12 +228,17 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
             async function showAirports(flights) {
                 airports = await extractAirports(flights);
                 
+                let html = "";
                 for (const name in airports) {
                     for (const date in airports[name]) {
-                        let flights = airports[name][date];
-                        console.log(`${name} ${date} ${flights.length}`);
+                        //let flights = airports[name][date];
+                        let strAirport = `${name} ${date}`;
+                        html += `<option data-date="${date}" value="${name}">${strAirport}</option>`;
                     }
                 }
+                
+                let cbAirport = document.querySelector('.cb-airport');
+                cbAirport.innerHTML = html;
             }
             
             showFlights().then(result => showAirports(result));
@@ -220,7 +261,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Html.html to edit thi
         
         <div class="airport-wrapper">
             <div class= "cb-wrapper">
-                <span>Airport</span>
+                <span>Airport / Date</span>
                 <select class="cb-airport">
                 </select>           
             </div>
